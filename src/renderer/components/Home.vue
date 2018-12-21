@@ -1,46 +1,60 @@
 <template>
   <div id="wrapper">
     <img id="logo" src="~@/assets/logo.png" alt="electron-vue">
-    <main>
-      <div class="left-side">
-        <span class="title">
-          Welcome to your new project!
-        </span>
-        <system-information></system-information>
-      </div>
-
-      <div class="right-side">
-        <div class="doc">
-          <div class="title">Getting Started</div>
-          <p>
-            electron-vue comes packed with detailed documentation that covers everything from
-            internal configurations, using the project structure, building your application,
-            and so much more.
-          </p>
-          <button @click="open('https://simulatedgreg.gitbooks.io/electron-vue/content/')">Read the Docs</button><br><br>
-        </div>
-        <div class="doc">
-          <div class="title alt">Other Documentation</div>
-          <button class="alt" @click="open('https://electron.atom.io/docs/')">Electron</button>
-          <button class="alt" @click="open('https://vuejs.org/v2/guide/')">Vue.js</button>
-        </div>
-      </div>
-    </main>
+    <el-form :model="form" label-width="40px">
+      <el-form-item>
+        <el-form-item label="ID">
+          <el-input placeholder="Please input channel id" v-model="form.id" clearable></el-input>
+        </el-form-item>
+        <el-form-item label="Name">
+          <el-input placeholder="Please input name" v-model="form.name" clearable></el-input>
+        </el-form-item>
+        <el-form-item>
+          <el-button style="float: right" type="primary" @click="addChannel">Add</el-button>
+        </el-form-item>
+      </el-form-item>
+    </el-form>
+    <el-table :data="channels">
+      <el-table-column prop="id" label="id"></el-table-column>
+      <el-table-column prop="name" label="name"></el-table-column>
+    </el-table>
   </div>
 </template>
 
 <script>
-  import SystemInformation from './LandingPage/SystemInformation'
+import db from '../datastore.js'
+import dbData from './db/channellist.json'
 
-  export default {
-    name: 'landing-page',
-    components: { SystemInformation },
-    methods: {
-      open (link) {
-        this.$electron.shell.openExternal(link)
-      }
+export default {
+  name: 'home',
+  data () {
+    return {
+      form: {
+        channelId: '',
+        name: ''
+      },
+      channels: []
     }
+  },
+  methods: {
+    addChannel () {
+      var data = {'id': this.form.id, 'name': this.form.name}
+      this.channels.push(data)
+      this.form = {}
+      this.$db.insert(data)
+    }
+  },
+  mounted () {
+    db.find({}, function (err, channels) {
+      if (channels.length === 0) {
+        db.insert(dbData)
+        channels = dbData
+      }
+      this.channels = channels
+      console.log(err)
+    }.bind(this))
   }
+}
 </script>
 
 <style>

@@ -3,6 +3,7 @@ import axios from 'axios'
 import ElementUI from 'element-ui'
 import locale from 'element-ui/lib/locale/lang/ja'
 import 'element-ui/lib/theme-chalk/index.css'
+import db from './datastore'
 
 import App from './App'
 import router from './router'
@@ -21,3 +22,4 @@ new Vue({
   store,
   template: '<App/>'
 }).$mount('#app')
+Vue.prototype.$db = db
