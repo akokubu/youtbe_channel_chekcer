@@ -11,6 +11,11 @@ export default new Router({
       component: require('@/components/Home').default
     },
     {
+      path: '/channel/:id',
+      name: 'channel',
+      component: require('@/components/Channel').default
+    },
+    {
       path: '*',
       redirect: '/'
     }

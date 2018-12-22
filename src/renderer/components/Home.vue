@@ -14,7 +14,7 @@
         </el-form-item>
       </el-form-item>
     </el-form>
-    <el-table :data="channels">
+    <el-table :data="channels" @row-click="rowClicked">
       <el-table-column prop="id" label="id"></el-table-column>
       <el-table-column prop="name" label="name"></el-table-column>
     </el-table>
@@ -38,20 +38,28 @@ export default {
   },
   methods: {
     addChannel () {
+      if (this.form.id === '' || this.form.name === '') {
+        return
+      }
       var data = {'id': this.form.id, 'name': this.form.name}
       this.channels.push(data)
       this.form = {}
       this.$db.insert(data)
+    },
+    rowClicked (row) {
+      this.$router.push({name: 'channel', params: { id: row.id }})
     }
   },
   mounted () {
     db.find({}, function (err, channels) {
+      if (err) {
+        console.log(err)
+      }
       if (channels.length === 0) {
         db.insert(dbData)
         channels = dbData
       }
       this.channels = channels
-      console.log(err)
     }.bind(this))
   }
 }
