@@ -22,6 +22,7 @@
   "dependencies": {
     "axios": "^0.18.0",
     "element-ui": "^2.3.6",
+    "googleapis": "^36.0.0",
     "nedb": "^1.8.0",
     "vue": "^2.5.16",
     "vue-electron": "^1.0.6",
