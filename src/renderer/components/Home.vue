@@ -18,6 +18,17 @@
       <el-table-column prop="id" label="id"></el-table-column>
       <el-table-column prop="name" label="name"></el-table-column>
     </el-table>
+    <br/>
+    <el-form :model="setting" label-width="40px">
+      <el-form-item>
+        <el-form-item label="auth">
+          <el-input placeholder="Please input auth key" v-model="setting.authKey" clearable></el-input>
+        </el-form-item>
+        <el-form-item>
+          <el-button style="float: right" type="primary" @click="updateSetting">Settiing</el-button>
+        </el-form-item>
+      </el-form-item>
+    </el-form>
   </div>
 </template>
 
@@ -33,7 +44,10 @@ export default {
         channelId: '',
         name: ''
       },
-      channels: []
+      channels: [],
+      setting: {
+        authkey: ''
+      }
     }
   },
   methods: {
@@ -48,6 +62,11 @@ export default {
     },
     rowClicked (row) {
       this.$router.push({name: 'channel', params: { id: row.id }})
+    },
+    updateSetting () {
+      localStorage.setItem('authKey', this.setting.authKey)
+      console.log('update setting')
+      console.log(localStorage.getItem('authKey'))
     }
   },
   mounted () {
@@ -61,6 +80,8 @@ export default {
       }
       this.channels = channels
     }.bind(this))
+
+    this.setting.authKey = localStorage.getItem('authKey')
   }
 }
 </script>
