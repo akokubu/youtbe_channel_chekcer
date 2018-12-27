@@ -68,6 +68,7 @@ export default {
         part: 'snippet',
         channelId: channelId,
         maxResults: 50,
+        type: 'video',
         order: 'date'
       }
       if (nextPageToken) {
