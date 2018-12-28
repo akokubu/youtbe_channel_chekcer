@@ -6,13 +6,13 @@
     <br/>
     <div class="ytb-row" v-for="video in videos">
       <div class="ytb-thumbnail">
-        <img :src="video.snippet.thumbnails.medium.url"/>
+        <img :src="video.thumbnail"/>
       </div>
       <div class="ytb-detail">
-        <el-button @click="watchVideo(video.id.videoId)" type="primary">WATCH</el-button>
-        <p>{{ video.snippet.title }}</p>
-        <p>{{ video.snippet.description }}</p>
-        <p>{{ video.snippet.publishedAt }}</p>
+        <el-button @click="watchVideo(video.id)" type="primary">WATCH</el-button>
+        <p>{{ video.title }}</p>
+        <p>{{ video.description }}</p>
+        <p>{{ video.publishedAt }}</p>
       </div>
     </div>
     <br/>
@@ -20,12 +20,21 @@
 </template>
 
 <script>
+import path from 'path'
+import { remote } from 'electron'
+
 const {google} = require('googleapis')
 const youtube = google.youtube({
   version: 'v3',
   auth: localStorage.getItem('authKey')
 })
 const {shell} = require('electron')
+
+var Datastore = require('nedb')
+var db = new Datastore({
+  filename: path.join(remote.app.getPath('userData'), '/video.db'),
+  autoload: true
+})
 
 export default {
   data () {
@@ -43,7 +52,26 @@ export default {
       shell.openExternal('https://www.youtube.com/watch?v=' + videoId)
     },
     getVideos: function (channelId) {
-      this.searchVideos(channelId, null)
+      var self = this
+      db.find({channelId: channelId}, function (err, results) {
+        if (err) {
+          console.log(err)
+        }
+        if (results.length > 0) {
+          results.sort(function (a, b) {
+            if (a.publishedAt > b.publishedAt) return -1
+            if (a.publishedAt < b.publishedAt) return 1
+            return 0
+          })
+
+          self.videos = results
+          return
+        }
+        self.searchVideos(channelId, null, function (videos) {
+          self.videos = videos
+          db.insert(videos)
+        })
+      })
     },
     getChannel (channelId) {
       const params = {
@@ -63,7 +91,7 @@ export default {
         }
       })
     },
-    searchVideos: function (channelId, nextPageToken) {
+    searchVideos: function (channelId, nextPageToken, callback) {
       const params = {
         part: 'snippet',
         channelId: channelId,
@@ -72,14 +100,36 @@ export default {
         order: 'date'
       }
       if (nextPageToken) {
-        params['nextPageToken'] = nextPageToken
+        params['pageToken'] = nextPageToken
       }
-
+      var self = this
       youtube.search.list(params, (err, data) => {
         if (err) {
           console.log(err)
         }
-        this.videos = data.data.items
+        self.videos = data.data.items
+        var list = []
+        data.data.items.forEach(function (video) {
+          list.push({
+            channelId: channelId,
+            id: video.id.videoId,
+            title: video.snippet.title,
+            despcription: video.snippet.description,
+            publishedAt: video.snippet.publishedAt,
+            thumbnail: video.snippet.thumbnails.medium.url
+          })
+        })
+        var next = data.data.nextPageToken
+        if (!next) {
+          callback(list)
+          return
+        }
+
+        self.searchVideos(channelId, next, function (nextList) {
+          Array.prototype.push.apply(list, nextList)
+          callback(list)
+        })
+        // callback(list)
       })
     }
   },
