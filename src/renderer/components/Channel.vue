@@ -57,19 +57,29 @@ export default {
         if (err) {
           console.log(err)
         }
+        var lastUpdate = null
         if (results.length > 0) {
           results.sort(function (a, b) {
             if (a.publishedAt > b.publishedAt) return -1
             if (a.publishedAt < b.publishedAt) return 1
             return 0
           })
-
           self.videos = results
-          return
+
+          var dt = new Date(results[0].publishedAt)
+          dt.setSeconds(dt.getSeconds() + 1)
+          lastUpdate = dt.toISOString().split('.')[0] + 'Z'
         }
-        self.searchVideos(channelId, null, function (videos) {
-          self.videos = videos
-          db.insert(videos)
+        self.searchVideos(channelId, lastUpdate, null, function (videos) {
+          if (videos.length > 0) {
+            db.insert(videos, function (err, newvideos) {
+              if (err) {
+                console.log(err)
+              }
+              Array.prototype.push.apply(newvideos, results)
+              self.videos = newvideos
+            })
+          }
         })
       })
     },
@@ -91,7 +101,7 @@ export default {
         }
       })
     },
-    searchVideos: function (channelId, nextPageToken, callback) {
+    searchVideos: function (channelId, lastUpdate, nextPageToken, callback) {
       const params = {
         part: 'snippet',
         channelId: channelId,
@@ -102,12 +112,14 @@ export default {
       if (nextPageToken) {
         params['pageToken'] = nextPageToken
       }
+      if (lastUpdate) {
+        params['publishedAfter'] = lastUpdate
+      }
       var self = this
       youtube.search.list(params, (err, data) => {
         if (err) {
           console.log(err)
         }
-        self.videos = data.data.items
         var list = []
         data.data.items.forEach(function (video) {
           list.push({
@@ -125,11 +137,10 @@ export default {
           return
         }
 
-        self.searchVideos(channelId, next, function (nextList) {
+        self.searchVideos(channelId, lastUpdate, next, function (nextList) {
           Array.prototype.push.apply(list, nextList)
           callback(list)
         })
-        // callback(list)
       })
     }
   },
