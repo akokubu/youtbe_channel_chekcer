@@ -10,6 +10,7 @@
       </div>
       <div class="ytb-detail">
         <el-button @click="watchVideo(video.id)" type="primary">WATCH</el-button>
+        <el-button @click="downloadVideo(video.id, video.title)" type="warning">DL</el-button>
         <p>{{ video.title }}</p>
         <p>{{ video.description }}</p>
         <p>{{ video.publishedAt }}</p>
@@ -142,6 +143,17 @@ export default {
           callback(list)
         })
       })
+    },
+    downloadVideo: function (videoId, title) {
+      const fs = require('fs')
+      const ytdl = require('ytdl-core')
+      const BASE_PATH = `https://www.youtube.com/watch?v=`
+      const url = BASE_PATH + videoId
+
+      var saveDir = localStorage.getItem('saveDir')
+      var savePath = saveDir + '/' + title.replace(/\//g, '_') + '.mp4'
+
+      ytdl(url).pipe(fs.createWriteStream(savePath))
     }
   },
   mounted: function () {
