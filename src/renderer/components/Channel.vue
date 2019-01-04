@@ -4,17 +4,8 @@
     <router-link :to="{ name: 'home' }"> back </router-link>
     <el-button @click="getVideos(channel.id)" type="primary">動画リスト取得</el-button>
     <br/>
-    <div class="ytb-row" v-for="video in videos">
-      <div class="ytb-thumbnail">
-        <img :src="video.thumbnail"/>
-      </div>
-      <div class="ytb-detail">
-        <el-button @click="watchVideo(video.id)" type="primary">WATCH</el-button>
-        <el-button @click="downloadVideo(video.id, video.title)" type="warning">DL</el-button>
-        <p>{{ video.title }}</p>
-        <p>{{ video.description }}</p>
-        <p>{{ video.publishedAt }}</p>
-      </div>
+    <div v-for="video in videos">
+      <yt-video :video="video" v-on:video-downloaded="videoDownloaded"></yt-video>
     </div>
     <br/>
   </div>
@@ -23,13 +14,13 @@
 <script>
 import path from 'path'
 import { remote } from 'electron'
+import YtVideo from './Video.vue'
 
 const {google} = require('googleapis')
 const youtube = google.youtube({
   version: 'v3',
   auth: localStorage.getItem('authKey')
 })
-const {shell} = require('electron')
 
 var Datastore = require('nedb')
 var db = new Datastore({
@@ -38,6 +29,9 @@ var db = new Datastore({
 })
 
 export default {
+  components: {
+    YtVideo
+  },
   data () {
     return {
       channel: {
@@ -49,9 +43,6 @@ export default {
     }
   },
   methods: {
-    watchVideo: function (videoId) {
-      shell.openExternal('https://www.youtube.com/watch?v=' + videoId)
-    },
     getVideos: function (channelId) {
       var self = this
       db.find({channelId: channelId}, function (err, results) {
@@ -144,24 +135,8 @@ export default {
         })
       })
     },
-    downloadVideo: function (videoId, title) {
-      const ytdl = require('ytdl-core')
-      const BASE_PATH = `https://www.youtube.com/watch?v=`
-      const url = BASE_PATH + videoId
-      const ffmpeg = require('fluent-ffmpeg')
-
-      var saveDir = localStorage.getItem('saveDir')
-      var savePath = saveDir + '/' + title.replace(/\//g, '_') + '.mp3'
-
-      var reader = ytdl(url, {filter: 'audioonly'})
-      var writer = ffmpeg(reader).format('mp3').audioBitrate(128)
-
-      writer
-        .on('end', () => {
-          console.log('writer end')
-        })
-
-      writer.output(savePath).run()
+    videoDownloaded: function (video) {
+      console.log(video)
     }
   },
   mounted: function () {
@@ -173,14 +148,5 @@ export default {
 <style>
 .image-round {
   border-radius: 50%;
-}
-.ytb-row {
-  display: flex;
-  margin-bottom: 10px;
-}
-.ytb-thumbnail {
-  display: inline-block;
-  position: relative;
-  padding-right: 20px;
 }
 </style>
