@@ -145,15 +145,23 @@ export default {
       })
     },
     downloadVideo: function (videoId, title) {
-      const fs = require('fs')
       const ytdl = require('ytdl-core')
       const BASE_PATH = `https://www.youtube.com/watch?v=`
       const url = BASE_PATH + videoId
+      const ffmpeg = require('fluent-ffmpeg')
 
       var saveDir = localStorage.getItem('saveDir')
-      var savePath = saveDir + '/' + title.replace(/\//g, '_') + '.mp4'
+      var savePath = saveDir + '/' + title.replace(/\//g, '_') + '.mp3'
 
-      ytdl(url).pipe(fs.createWriteStream(savePath))
+      var reader = ytdl(url, {filter: 'audioonly'})
+      var writer = ffmpeg(reader).format('mp3').audioBitrate(128)
+
+      writer
+        .on('end', () => {
+          console.log('writer end')
+        })
+
+      writer.output(savePath).run()
     }
   },
   mounted: function () {
