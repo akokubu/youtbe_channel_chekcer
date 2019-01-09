@@ -5,10 +5,12 @@
     </div>
     <div class="ytb-detail">
       <el-button @click="watchVideo(video.id)" type="primary">WATCH</el-button>
-      <el-button @click="downloadVideo(video.id, video.title)" type="warning">DL</el-button>
+      <el-button v-if="downloading" type="primary">Downlogind...</el-button>
+      <el-button v-else @click="downloadVideo(video.id, video.title)" :type="downloadedVideo">DL</el-button>
       <p>{{ video.title }}</p>
       <p>{{ video.description }}</p>
       <p>{{ video.publishedAt }}</p>
+      <el-checkbox @change="downloadedClick" v-model="video.downloaded">downloaded</el-checkbox>
     </div>
   </div>
 </template>
@@ -19,11 +21,17 @@ export default {
   props: {
     video: {type: Object, default: () => { return {} }}
   },
+  data () {
+    return {
+      downloading: false
+    }
+  },
   methods: {
     watchVideo: function (videoId) {
       shell.openExternal('https://www.youtube.com/watch?v=' + videoId)
     },
     downloadVideo: function (videoId, title) {
+      this.downloading = true
       const ytdl = require('ytdl-core')
       const BASE_PATH = `https://www.youtube.com/watch?v=`
       const url = BASE_PATH + videoId
@@ -37,10 +45,20 @@ export default {
 
       writer
         .on('end', () => {
+          this.downloading = false
+          this.$set(this.video, 'downloaded', true)
           this.$emit('video-downloaded', this.video)
         })
 
       writer.output(savePath).run()
+    },
+    downloadedClick: function () {
+      this.$emit('video-downloaded', this.video)
+    }
+  },
+  computed: {
+    downloadedVideo: function () {
+      return this.video.downloaded ? 'warning' : 'danger'
     }
   }
 }

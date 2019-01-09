@@ -136,7 +136,7 @@ export default {
       })
     },
     videoDownloaded: function (video) {
-      console.log(video)
+      db.update({ _id: video._id }, { $set: { downloaded: video.downloaded } }, {}, function () {})
     }
   },
   mounted: function () {
