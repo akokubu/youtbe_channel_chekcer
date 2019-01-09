@@ -32,25 +32,29 @@ export default {
     },
     downloadVideo: function (videoId, title) {
       this.downloading = true
+
+      const fs = require('fs')
       const ytdl = require('ytdl-core')
       const BASE_PATH = `https://www.youtube.com/watch?v=`
       const url = BASE_PATH + videoId
       const ffmpeg = require('fluent-ffmpeg')
 
       var saveDir = localStorage.getItem('saveDir')
+      var mp4SavePath = '/tmp/' + videoId + '.mp4'
       var savePath = saveDir + '/' + title.replace(/\//g, '_') + '.mp3'
 
-      var reader = ytdl(url, {filter: 'audioonly'})
-      var writer = ffmpeg(reader).format('mp3').audioBitrate(128)
-
-      writer
-        .on('end', () => {
+      const mp4Video = ytdl(url)
+      mp4Video.pipe(fs.createWriteStream(mp4SavePath))
+      mp4Video.on('end', () => {
+        const proc = ffmpeg({source: mp4SavePath})
+        proc.format('mp3').audioBitrate(128)
+        proc.on('end', () => {
           this.downloading = false
           this.$set(this.video, 'downloaded', true)
           this.$emit('video-downloaded', this.video)
         })
-
-      writer.output(savePath).run()
+        proc.output(savePath).run()
+      })
     },
     downloadedClick: function () {
       this.$emit('video-downloaded', this.video)
