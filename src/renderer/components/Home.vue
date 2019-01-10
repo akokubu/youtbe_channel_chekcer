@@ -1,6 +1,17 @@
 <template>
   <div id="wrapper">
     <img id="logo" src="~@/assets/logo.png" alt="electron-vue">
+    <el-table :data="channels" @row-click="rowClicked">
+      <el-table-column prop="id" label="id"></el-table-column>
+      <el-table-column prop="name" label="name"></el-table-column>
+      <el-table-column prop="format" label="format"></el-table-column>
+    </el-table>
+    <router-link to="/setting">Setting</router-link>
+
+  <!-- 登録ダイアログ -->
+  <el-button @click="registry_visible = true">登録</el-button>
+
+  <el-dialog :visible.sync="registry_visible" title="チャンネル登録" width="80%">
     <el-form :model="form" label-width="40px">
       <el-form-item>
         <el-form-item label="ID">
@@ -9,16 +20,21 @@
         <el-form-item label="Name">
           <el-input placeholder="Please input name" v-model="form.name" clearable></el-input>
         </el-form-item>
-        <el-form-item>
-          <el-button style="float: right" type="primary" @click="addChannel">Add</el-button>
+        <el-form-item label="Type">
+          <el-radio-group v-model="form.format">
+            <el-radio-button label="mp3"></el-radio-button>
+            <el-radio-button label="mp4"></el-radio-button>
+          </el-radio-group>
         </el-form-item>
       </el-form-item>
     </el-form>
-    <el-table :data="channels" @row-click="rowClicked">
-      <el-table-column prop="id" label="id"></el-table-column>
-      <el-table-column prop="name" label="name"></el-table-column>
-    </el-table>
-    <router-link to="/setting">Setting</router-link>
+
+    <span slot="footer" class="dialog-footer">
+      <el-button @click="registry_visible = false">Cancel</el-button>
+      <el-button style="float: right" type="primary" @click="addChannel">Add</el-button>
+    </span>
+  </el-dialog>
+
   </div>
 </template>
 
@@ -32,8 +48,10 @@ export default {
     return {
       form: {
         channelId: '',
-        name: ''
+        name: '',
+        format: 'mp3'
       },
+      registry_visible: false,
       channels: []
     }
   },
@@ -42,10 +60,11 @@ export default {
       if (this.form.id === '' || this.form.name === '') {
         return
       }
-      var data = {'id': this.form.id, 'name': this.form.name}
+      var data = {'id': this.form.id, 'name': this.form.name, 'format': this.form.format}
       this.channels.push(data)
       this.form = {}
       this.$db.insert(data)
+      this.registry_visible = false
     },
     rowClicked (row) {
       this.$router.push({name: 'channel', params: { id: row.id }})
