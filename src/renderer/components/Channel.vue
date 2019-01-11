@@ -10,7 +10,7 @@
     <el-button @click="getVideos(channel.id)" type="primary">動画リスト取得</el-button>
     <br/>
     <div v-for="video in videos">
-      <yt-video :video="video" v-on:video-downloaded="videoDownloaded"></yt-video>
+      <yt-video :video="video" :format="channel.format" v-on:video-downloaded="videoDownloaded"></yt-video>
     </div>
     <br/>
   </div>
