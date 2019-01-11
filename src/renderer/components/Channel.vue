@@ -2,6 +2,11 @@
   <div>
     <p><img :src='channel.thumbnail' class="image-round"/>{{ channel.title }}</p>
     <router-link :to="{ name: 'home' }"> back </router-link>
+    <el-radio-group v-model="channel.format" @change="changeFormat">
+      <el-radio-button label="mp3"></el-radio-button>
+      <el-radio-button label="mp4"></el-radio-button>
+    </el-radio-group>
+    <hr/>
     <el-button @click="getVideos(channel.id)" type="primary">動画リスト取得</el-button>
     <br/>
     <div v-for="video in videos">
@@ -23,7 +28,7 @@ const youtube = google.youtube({
 })
 
 var Datastore = require('nedb')
-var db = new Datastore({
+var videoDb = new Datastore({
   filename: path.join(remote.app.getPath('userData'), '/video.db'),
   autoload: true
 })
@@ -34,20 +39,17 @@ export default {
   },
   data () {
     return {
-      channel: {
-        id: '',
-        title: '',
-        thumbnail: ''
-      },
+      channel: {},
       videos: []
     }
   },
   methods: {
     getVideos: function (channelId) {
       var self = this
-      db.find({channelId: channelId}, function (err, results) {
+      videoDb.find({channelId: channelId}, function (err, results) {
         if (err) {
           console.log(err)
+          return
         }
         var lastUpdate = null
         if (results.length > 0) {
@@ -64,9 +66,10 @@ export default {
         }
         self.searchVideos(channelId, lastUpdate, null, function (videos) {
           if (videos.length > 0) {
-            db.insert(videos, function (err, newvideos) {
+            videoDb.insert(videos, function (err, newvideos) {
               if (err) {
                 console.log(err)
+                return
               }
               Array.prototype.push.apply(newvideos, results)
               self.videos = newvideos
@@ -76,21 +79,32 @@ export default {
       })
     },
     getChannel (channelId) {
-      const params = {
-        part: 'snippet',
-        id: channelId
-      }
-
-      youtube.channels.list(params, (err, data) => {
+      var self = this
+      this.$db.findOne({id: channelId}, function (err, channel) {
         if (err) {
           console.log(err)
+          return
         }
-        var ch = data.data.items[0].snippet
-        this.channel = {
-          id: params.id,
-          title: ch.title,
-          thumbnail: ch.thumbnails.medium.url
+
+        const params = {
+          part: 'snippet',
+          id: channelId
         }
+
+        youtube.channels.list(params, (err, data) => {
+          if (err) {
+            console.log(err)
+            return
+          }
+          var ch = data.data.items[0].snippet
+          self.channel = {
+            id: params.id,
+            title: ch.title,
+            name: channel.name,
+            thumbnail: ch.thumbnails.medium.url,
+            format: channel.format
+          }
+        })
       })
     },
     searchVideos: function (channelId, lastUpdate, nextPageToken, callback) {
@@ -136,7 +150,10 @@ export default {
       })
     },
     videoDownloaded: function (video) {
-      db.update({ _id: video._id }, { $set: { downloaded: video.downloaded } }, {}, function () {})
+      videoDb.update({ _id: video._id }, { $set: { downloaded: video.downloaded } }, {}, function () {})
+    },
+    changeFormat: function () {
+      this.$db.update({ id: this.channel.id }, { $set: { format: this.channel.format } }, {}, function () {})
     }
   },
   mounted: function () {
