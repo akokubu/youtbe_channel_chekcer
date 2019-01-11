@@ -5,7 +5,8 @@
     </div>
     <div class="ytb-detail">
       <el-button @click="watchVideo(video.id)" type="primary">WATCH</el-button>
-      <el-button v-if="downloading" type="primary">Downloadind...</el-button>
+      <el-button v-if="status === 'downloading'" type="primary">Downloadind...{{ progress }}%</el-button>
+      <el-button v-else-if="status === 'converting'" type="warning">Converting...{{ progress }}%</el-button>
       <el-button v-else @click="downloadVideo(video.id, video.title)" :type="downloadedVideo">DL</el-button>
       <p>{{ video.title }}</p>
       <p>{{ video.description }}</p>
@@ -24,7 +25,8 @@ export default {
   },
   data () {
     return {
-      downloading: false
+      status: '',
+      progress: 0
     }
   },
   methods: {
@@ -32,7 +34,7 @@ export default {
       shell.openExternal('https://www.youtube.com/watch?v=' + videoId)
     },
     downloadVideo: function (videoId, title) {
-      this.downloading = true
+      this.status = 'downloading'
 
       const fs = require('fs')
       const ytdl = require('ytdl-core')
@@ -51,20 +53,31 @@ export default {
 
       const mp4Video = ytdl(url)
       mp4Video.pipe(fs.createWriteStream(mp4SavePath))
+      mp4Video.on('progress', (chunkLength, downloaded, total) => {
+        this.progress = parseInt(downloaded / total * 100)
+      })
       mp4Video.on('end', () => {
         // convert mp3
         if (this.format === 'mp3') {
+          this.status = 'converting'
+          this.progress = 0
           const proc = ffmpeg({source: mp4SavePath})
           var savePath = saveDir + '/' + title.replace(/\//g, '_') + '.mp3'
           proc.format('mp3').audioBitrate(128)
+
+          proc.on('progress', (progress) => {
+            this.progress = parseInt(progress.percent)
+          })
           proc.on('end', () => {
-            this.downloading = false
+            this.status = ''
+            this.progress = 0
             this.$set(this.video, 'downloaded', true)
             this.$emit('video-downloaded', this.video)
           })
           proc.output(savePath).run()
         } else {
-          this.downloading = false
+          this.status = ''
+          this.progress = 0
           this.$set(this.video, 'downloaded', true)
           this.$emit('video-downloaded', this.video)
         }
@@ -76,7 +89,7 @@ export default {
   },
   computed: {
     downloadedVideo: function () {
-      return this.video.downloaded ? 'warning' : 'danger'
+      return this.video.downloaded ? 'success' : 'danger'
     }
   }
 }
