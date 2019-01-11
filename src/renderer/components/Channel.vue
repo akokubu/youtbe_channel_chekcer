@@ -7,9 +7,11 @@
       <el-radio-button label="mp4"></el-radio-button>
     </el-radio-group>
     <hr/>
+    <el-button @click="getUnDownloadedVideos(channel.id)" type="primary">未ダウンロード動画リスト取得</el-button>
     <el-button @click="getVideos(channel.id)" type="primary">動画リスト取得</el-button>
+    <el-button @click="deleteVideo(channel.id)" type="danger">リスト削除</el-button>
     <br/>
-    <div v-for="video in videos">
+    <div v-for="video in videos" :key="video._id">
       <yt-video :video="video" :format="channel.format" v-on:video-downloaded="videoDownloaded"></yt-video>
     </div>
     <br/>
@@ -44,7 +46,20 @@ export default {
     }
   },
   methods: {
-    getVideos: function (channelId) {
+    deleteVideo: function (channelId) {
+      console.log(channelId)
+      videoDb.remove({channelId: channelId}, {multi: true}, function (err, numRemoved) {
+        if (err) {
+          console.log(err)
+          return
+        }
+        console.log('deleted: ' + numRemoved)
+      })
+    },
+    getUnDownloadedVideos: function (channelId) {
+      this.getVideos(channelId, true)
+    },
+    getVideos: function (channelId, undownloaded = false) {
       var self = this
       videoDb.find({channelId: channelId}, function (err, results) {
         if (err) {
@@ -58,11 +73,15 @@ export default {
             if (a.publishedAt < b.publishedAt) return 1
             return 0
           })
-          self.videos = results
 
           var dt = new Date(results[0].publishedAt)
           dt.setSeconds(dt.getSeconds() + 1)
           lastUpdate = dt.toISOString().split('.')[0] + 'Z'
+
+          if (undownloaded) {
+            results = results.filter(video => video.downloaded !== true)
+          }
+          self.videos = results
         }
         self.searchVideos(channelId, lastUpdate, null, function (videos) {
           if (videos.length > 0) {
