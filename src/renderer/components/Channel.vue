@@ -47,6 +47,11 @@ export default {
   },
   methods: {
     deleteVideo: function (channelId) {
+      if (!confirm('Are you sure?')) {
+        console.log('delete cancel')
+        return
+      }
+
       console.log(channelId)
       videoDb.remove({channelId: channelId}, {multi: true}, function (err, numRemoved) {
         if (err) {
