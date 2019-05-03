@@ -23,14 +23,14 @@
     "axios": "^0.18.0",
     "element-ui": "^2.3.6",
     "fluent-ffmpeg": "^2.1.2",
-    "googleapis": "^36.0.0",
+    "googleapis": "^38.0.0",
     "nedb": "^1.8.0",
     "vue": "^2.5.16",
     "vue-electron": "^1.0.6",
     "vue-router": "^3.0.1",
     "vuex": "^3.0.1",
     "vuex-electron": "^1.0.0",
-    "ytdl-core": "^0.28.3"
+    "ytdl-core": "^0.29.1"
   },
   "devDependencies": {
     "ajv": "^6.5.0",
