@@ -82,7 +82,7 @@ export default {
           var dt = new Date(results[0].publishedAt)
           dt.setSeconds(dt.getSeconds() + 1)
           lastUpdate = dt.toISOString().split('.')[0] + 'Z'
-
+          console.log(lastUpdate)
           if (undownloaded) {
             results = results.filter(video => video.downloaded !== true)
           }
@@ -145,6 +145,7 @@ export default {
       if (lastUpdate) {
         params['publishedAfter'] = lastUpdate
       }
+      console.log(params)
       var self = this
       youtube.search.list(params, (err, data) => {
         if (err) {
@@ -152,14 +153,17 @@ export default {
         }
         var list = []
         data.data.items.forEach(function (video) {
-          list.push({
-            channelId: channelId,
-            id: video.id.videoId,
-            title: video.snippet.title,
-            despcription: video.snippet.description,
-            publishedAt: video.snippet.publishedAt,
-            thumbnail: video.snippet.thumbnails.medium.url
-          })
+          console.log(video.snippet.publishedAt)
+          if (lastUpdate == null || video.snippet.publishedAt > lastUpdate) {
+            list.push({
+              channelId: channelId,
+              id: video.id.videoId,
+              title: video.snippet.title,
+              despcription: video.snippet.description,
+              publishedAt: video.snippet.publishedAt,
+              thumbnail: video.snippet.thumbnails.medium.url
+            })
+          }
         })
         var next = data.data.nextPageToken
         if (!next) {
